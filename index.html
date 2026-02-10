@@ -110,6 +110,7 @@ async function loadDirection(stopId, elementId) {
         list.innerHTML = "";
 
         const arrivals = stopTimes
+            .filter(t => t.predictedArrivalTime && !isNaN(t.predictedArrivalTime))
             .map(t => {
                 const trip = trips[t.tripId];
                 const routeId = trip?.routeId;
