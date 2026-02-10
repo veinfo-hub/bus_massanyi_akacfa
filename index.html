@@ -94,7 +94,7 @@
 <script>
 async function loadDirection(stopId, elementId) {
     const url =
-      "https://go.bkk.hu/api/query/v1/ws/otp/api/where/arrivals-and-departures-for-stop.json?stopId=BKK_"
+      "https://go.bkk.hu/api/query/v1/ws/otp/api/where/arrivals-and-departures-for-stop.json?stopId="
       + stopId +
       "&minutesBefore=0&minutesAfter=60&key=7d985771-b08b-4347-a786-cb995e88bd3e";
 
@@ -103,16 +103,23 @@ async function loadDirection(stopId, elementId) {
         const json = await res.json();
 
         const stopTimes = json.data.entry.stopTimes;
+        const routes = json.data.references.routes;
         const now = Date.now() / 1000;
         const list = document.getElementById(elementId);
         list.innerHTML = "";
 
         const arrivals = stopTimes
-            .map(t => t.predictedArrivalTime)
-            .sort((a, b) => a - b)
+            .map(t => ({
+                time: t.predictedArrivalTime,
+                route: routes[t.routeId]?.shortName || ""
+            }))
+            .sort((a, b) => a.time - b.time)
             .slice(0, 2);
 
-        arrivals.forEach((ts, index) => {
+        arrivals.forEach((item, index) => {
+            const ts = item.time;
+            const route = item.route;
+
             const diff = Math.round((ts - now) / 60);
             const date = new Date(ts * 1000);
             const hh = String(date.getHours()).padStart(2, "0");
@@ -127,7 +134,7 @@ async function loadDirection(stopId, elementId) {
             const div = document.createElement("div");
             div.className = "time";
             div.innerHTML = `
-                <span>${diff} perc múlva – ${hh}:${mm}</span>
+                <span>${diff} perc múlva – ${hh}:${mm} (${route})</span>
                 ${label ? `<span class="label">${label}</span>` : ""}
             `;
             list.appendChild(div);
@@ -143,8 +150,8 @@ async function loadDirection(stopId, elementId) {
 }
 
 async function loadAll() {
-    await loadDirection("064067", "list-massanyi");
-    await loadDirection("064183", "list-akacfa");
+    await loadDirection("BKK_064067", "list-massanyi");
+    await loadDirection("BKK_064183", "list-akacfa");
 
     document.getElementById("updated").textContent =
         "Frissítve: " + new Date().toLocaleTimeString("hu-HU");
